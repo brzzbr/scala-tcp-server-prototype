@@ -56,7 +56,7 @@ class Server(port: Int) extends Actor with ActorLogging {
     case ClientEvent(id, data) =>
       log.info(s"Client $id has sent some data")
       clients
-        .filterKeys(_ ne id)
+        .filterKeys(_ != id)
         .values
         .foreach(_ ! Send(data))
 
