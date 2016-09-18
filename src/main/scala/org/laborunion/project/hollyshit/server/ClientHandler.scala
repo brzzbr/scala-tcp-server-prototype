@@ -1,10 +1,10 @@
-package org.laborunion.project.hollyshit
+package org.laborunion.project.hollyshit.server
 
 import java.net.InetSocketAddress
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.ByteString
-import org.laborunion.project.hollyshit.PlayRoom.{ClientDisconnected, ClientEvent}
+import org.laborunion.project.hollyshit.server.PlayRoom.{ClientDisconnected, ClientEvent}
 
 /**
   * Created by borisbondarenko on 17.09.16.

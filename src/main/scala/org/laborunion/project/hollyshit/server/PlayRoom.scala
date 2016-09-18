@@ -1,4 +1,4 @@
-package org.laborunion.project.hollyshit
+package org.laborunion.project.hollyshit.server
 
 import akka.util.ByteString
 

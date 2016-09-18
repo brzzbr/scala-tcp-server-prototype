@@ -1,13 +1,11 @@
-package org.laborunion.project.hollyshit
+package org.laborunion.project.hollyshit.server
 
 import java.net.InetSocketAddress
 
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.io.{IO, Tcp}
-import org.laborunion.project.hollyshit.ClientHandler.Send
-import org.laborunion.project.hollyshit.PlayRoom.{ClientDisconnected, ClientEvent}
-
-import scala.io.StdIn
+import org.laborunion.project.hollyshit.server.ClientHandler.Send
+import org.laborunion.project.hollyshit.server.PlayRoom.{ClientDisconnected, ClientEvent}
 
 /**
   * Created by borisbondarenko on 17.09.16.
@@ -23,8 +21,9 @@ class Server(port: Int) extends Actor with ActorLogging {
   import context.system
 
   var idGenerator: Long = 0L
+
   def generateClientId(): Long = {
-    idGenerator += idGenerator
+    idGenerator += 1
     idGenerator
   }
 
@@ -68,15 +67,4 @@ class Server(port: Int) extends Actor with ActorLogging {
       log.info(s"Client $id disconnected")
       clients -= id
   }
-}
-
-object ServerRunner extends App {
-
-  val system = ActorSystem()
-  system.actorOf(Server.props(3159))
-
-  println(s"PRESS ENTER TO STOP...")
-  StdIn.readLine()
-  system.terminate()
-  println(s"ACTOR SYSTEM TERMINATED")
 }
