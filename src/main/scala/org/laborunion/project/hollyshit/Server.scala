@@ -7,6 +7,8 @@ import akka.io.{IO, Tcp}
 import org.laborunion.project.hollyshit.ClientHandler.Send
 import org.laborunion.project.hollyshit.PlayRoom.{ClientDisconnected, ClientEvent}
 
+import scala.io.StdIn
+
 /**
   * Created by borisbondarenko on 17.09.16.
   */
@@ -45,7 +47,7 @@ class Server(port: Int) extends Actor with ActorLogging {
       log.info(s"Client connected: $remote")
       val connection = sender
       val id = generateClientId()
-      val handler = context.actorOf(ClientHandler.props(id, connection, self))
+      val handler = context.actorOf(ClientHandler.props(id, remote, connection, self))
       clients += id -> handler
       context watch handler
       connection ! Register(handler)
@@ -69,5 +71,12 @@ class Server(port: Int) extends Actor with ActorLogging {
 }
 
 object ServerRunner extends App {
-  ActorSystem().actorOf(Server.props(3159))
+
+  val system = ActorSystem()
+  system.actorOf(Server.props(3159))
+
+  println(s"PRESS ENTER TO STOP...")
+  StdIn.readLine()
+  system.terminate()
+  println(s"ACTOR SYSTEM TERMINATED")
 }

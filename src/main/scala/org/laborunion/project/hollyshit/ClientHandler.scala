@@ -1,5 +1,7 @@
 package org.laborunion.project.hollyshit
 
+import java.net.InetSocketAddress
+
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.ByteString
 import org.laborunion.project.hollyshit.PlayRoom.{ClientDisconnected, ClientEvent}
@@ -11,11 +13,15 @@ object ClientHandler {
 
   case class Send(data: ByteString)
 
-  def props(id: Long, connection: ActorRef, playroom: ActorRef): Props =
-    Props(new CleintHandler(id, connection, playroom))
+  def props(id: Long, remote: InetSocketAddress, connection: ActorRef, playroom: ActorRef): Props =
+    Props(new CleintHandler(id, remote, connection, playroom))
 }
 
-class CleintHandler(id: Long, connection: ActorRef, playroom: ActorRef) extends Actor with ActorLogging {
+class CleintHandler(
+    id: Long,
+    remote: InetSocketAddress,
+    connection: ActorRef,
+    playroom: ActorRef) extends Actor with ActorLogging {
 
   import ClientHandler._
   import akka.io.Tcp._
@@ -27,14 +33,19 @@ class CleintHandler(id: Long, connection: ActorRef, playroom: ActorRef) extends 
   override def receive: Receive = {
 
     // получили сообщение от клиента -- оповестим супервайзера (сервер)
-    case Received(data) => playroom ! ClientEvent(id, data)
+    case Received(data) =>
+      log.info(s"Client id: $id, received message from: $remote")
+      playroom ! ClientEvent(id, data)
 
     // надо послать сообщение клиенту
-    case Send(data) => connection ! Write(data)
+    case Send(data) =>
+      log.info(s"Client $id, send data to $remote")
+      connection ! Write(data)
 
     // соединение было закрыто, можно уведомить игровую комнату
     // и незамедлительно убить актора
     case PeerClosed =>
+      log.info(s"Client id: $id, peer: $remote closed")
       playroom ! ClientDisconnected(id)
       context stop self
   }
