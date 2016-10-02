@@ -1,0 +1,23 @@
+package org.laborunion.project.hollyshit;
+
+message MessageWrapper {
+    oneof msg {
+        GetEventsMsg getEventsMsg = 1;
+        GetStateMsg getStateMsg = 2;
+        EventMsg eventMsg = 3;
+    }
+}
+
+message GetEventsMsg {
+    required int64 time = 1;
+    required int64 fromTime = 2;
+}
+
+message GetStateMsg {
+    required int64 time = 1;
+}
+
+message EventMsg {
+    required int64 time = 1;
+    required int32 code = 2;
+}

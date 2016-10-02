@@ -9,18 +9,25 @@ lazy val `tcp-server`: Project = (project in file("."))
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-encoding", "utf8"),
     fork in run := true,
     parallelExecution in IntegrationTest := false,
-    libraryDependencies ++= dependencies
+    libraryDependencies ++= dependencies,
+    PB.targets in Compile := Seq(
+      scalapb.gen() -> (sourceManaged in Compile).value
+    )
   )
 
 lazy val dependencies: Seq[ModuleID] = {
 
   val akkaV = "2.4.10"
+  val jodaV = "2.9.4"
   val scalatestV = "2.2.6"
   val mockitoV = "1.10.19"
 
   Seq(
     // akka
     "com.typesafe.akka" %% "akka-actor" % akkaV,
+
+    // joda
+    "joda-time" % "joda-time" % jodaV,
 
     // tests
     "org.scalatest" %% "scalatest" % scalatestV % "it, test",
