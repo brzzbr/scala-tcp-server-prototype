@@ -17,18 +17,18 @@ import scala.concurrent.duration._
 object ClientHandler {
 
   def props(id: Int, remote: InetSocketAddress, connection: ActorRef, playroom: ActorRef): Props =
-    Props(new CleintHandler(id, remote, connection, playroom))
+    Props(new ClientHandler(id, remote, connection, playroom))
 }
 
-class CleintHandler(
+class ClientHandler(
     id: Int,
     remote: InetSocketAddress,
     connection: ActorRef,
     playroom: ActorRef) extends Actor with ActorLogging {
 
   import akka.io.Tcp._
+  import context.dispatcher
 
-  implicit val ec = context.dispatcher
   implicit val timeout = Timeout(50 milliseconds)
 
   // контекст этого актора наблюдает за актором соединения

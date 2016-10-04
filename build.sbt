@@ -20,7 +20,6 @@ lazy val dependencies: Seq[ModuleID] = {
 
   val akkaV = "2.4.10"
   val inMemV = "1.3.10"
-  val jodaV = "2.9.4"
   val scalatestV = "2.2.6"
   val mockitoV = "1.10.19"
 
@@ -28,9 +27,6 @@ lazy val dependencies: Seq[ModuleID] = {
     // akka
     "com.typesafe.akka" %% "akka-actor" % akkaV,
     "com.github.dnvriend" %% "akka-persistence-inmemory" % inMemV,
-
-    // joda
-    "joda-time" % "joda-time" % jodaV,
 
     // tests
     "org.scalatest" %% "scalatest" % scalatestV % "it, test",

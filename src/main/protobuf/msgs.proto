@@ -1,3 +1,5 @@
+syntax = "proto2";
+
 package org.laborunion.project.hollyshit;
 
 message MessageWrapper {
@@ -32,6 +34,9 @@ message EventMsg {
         Respawn respawn = 3;
         Move move = 4;
         Die die = 5;
+
+        Connected connected = 6;
+        Disconnected disconnected = 7;
     }
 }
 
@@ -46,4 +51,10 @@ message Move {
 }
 
 message Die {
+}
+
+message Connected {
+}
+
+message Disconnected {
 }
