@@ -12,12 +12,14 @@ lazy val `tcp-server`: Project = (project in file("."))
     libraryDependencies ++= dependencies,
     PB.targets in Compile := Seq(
       scalapb.gen() -> (sourceManaged in Compile).value
-    )
+    ),
+    resolvers += Resolver.jcenterRepo
   )
 
 lazy val dependencies: Seq[ModuleID] = {
 
   val akkaV = "2.4.10"
+  val inMemV = "1.3.10"
   val jodaV = "2.9.4"
   val scalatestV = "2.2.6"
   val mockitoV = "1.10.19"
@@ -25,6 +27,7 @@ lazy val dependencies: Seq[ModuleID] = {
   Seq(
     // akka
     "com.typesafe.akka" %% "akka-actor" % akkaV,
+    "com.github.dnvriend" %% "akka-persistence-inmemory" % inMemV,
 
     // joda
     "joda-time" % "joda-time" % jodaV,

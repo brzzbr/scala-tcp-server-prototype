@@ -4,8 +4,11 @@ import java.net.InetSocketAddress
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.io.{IO, Tcp}
-import org.laborunion.project.hollyshit.server.ClientHandler.Send
-import org.laborunion.project.hollyshit.server.PlayRoom.{ClientDisconnected, ClientEvent}
+import org.joda.time.DateTime
+import org.laborunion.project.hollyshit.msgs.{EventMsg, Events, PlayRoomState}
+import org.laborunion.project.hollyshit.server.PlayRoom.{ClientDisconnected, GetCurrentState, GetEventsFromTime}
+
+import scala.concurrent.duration._
 
 /**
   * Created by borisbondarenko on 17.09.16.
@@ -19,17 +22,33 @@ class Server(port: Int) extends Actor with ActorLogging {
 
   import akka.io.Tcp._
   import context.system
+  import context.dispatcher
 
-  var idGenerator: Long = 0L
+  val w = 10 seconds
+  val n = w div 2
 
-  def generateClientId(): Long = {
+  var idGenerator: Int = 0
+
+  def generateClientId(): Int = {
     idGenerator += 1
     idGenerator
   }
 
-  var clients: Map[Long, ActorRef] = Map.empty[Long, ActorRef]
+  var clients: Map[Int, ActorRef] = Map.empty[Int, ActorRef]
+  var eventBuffer: Vector[EventMsg] = Vector.empty[EventMsg]
+  var currentState: PlayRoomState = PlayRoomState(0)
 
   IO(Tcp) ! Bind(self, new InetSocketAddress("localhost", port))
+
+  // TODO: раз в N секунд собирать новый state комнаты и посылать сообщение с ним N = W / 2
+  val stateSnapshotJob = context.system.scheduler.schedule(n, w) {
+    println("AZAZA")
+  }
+
+  override def postStop(): Unit = {
+    stateSnapshotJob.cancel()
+    super.postStop()
+  }
 
   override def receive: Receive = {
     // при успешном биндинге к порту просто логгируем этот факт
@@ -52,14 +71,19 @@ class Server(port: Int) extends Actor with ActorLogging {
       connection ! Register(handler)
 
     // Сервер пока несет на себе функции игровой комнаты. Да -- некрасиво, да -- неправильно,
-    // но пока большего и не нужно. Один сервер -- одна комната. Пришло событие от одного клиента -->
-    // широковещательно отстрелили его на всех остальных
-    case ClientEvent(id, data) =>
-      log.info(s"Client $id has sent some data")
-      clients
-        .filterKeys(_ != id)
-        .values
-        .foreach(_ ! Send(data))
+    // но пока большего и не нужно. Один сервер -- одна комната. Пришло событие от клиента -->
+    // записали в коллекцию событий, выкинули устаревшие, отсортировали по времени, сохранили.
+    case event@EventMsg(_, _, _) =>
+      val treshold = DateTime.now.getMillis - w.toMillis
+      eventBuffer = (eventBuffer :+ event)
+        .filter(_.time > treshold)
+        .sortBy(_.time)
+
+    case GetCurrentState => sender ! currentState
+
+    case GetEventsFromTime(time) =>
+      val events = eventBuffer.dropWhile(_.time < time)
+      sender ! Events(events)
 
     // когда клиент отключается, надо бы его выкинуть из мапы клиентов.
     // Это тоже функциональность игровой комнаты, не сервера.

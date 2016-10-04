@@ -1,0 +1,49 @@
+package org.laborunion.project.hollyshit;
+
+message MessageWrapper {
+    oneof msg {
+        GetEventsMsg getEventsMsg = 1;
+        GetStateMsg getStateMsg = 2;
+        EventMsg eventMsg = 3;
+    }
+}
+
+message GetEventsMsg {
+    required int64 time = 1;
+    required int64 fromTime = 2;
+}
+
+message GetStateMsg {
+    required int64 time = 1;
+}
+
+message PlayRoomState {
+    required int32 playersCount = 1;
+}
+
+message Events {
+    repeated EventMsg events = 1;
+}
+
+message EventMsg {
+    optional int32 playerId = 1;
+    required int64 time = 2;
+    oneof event {
+        Respawn respawn = 3;
+        Move move = 4;
+        Die die = 5;
+    }
+}
+
+message Respawn {
+    required int32 x = 1;
+    required int32 y = 2;
+}
+
+message Move {
+    required int32 dx = 1;
+    required int32 dy = 2;
+}
+
+message Die {
+}

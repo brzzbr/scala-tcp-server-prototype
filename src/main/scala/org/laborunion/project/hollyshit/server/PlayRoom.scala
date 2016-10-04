@@ -1,6 +1,6 @@
 package org.laborunion.project.hollyshit.server
 
-import akka.util.ByteString
+import akka.actor.{Actor, ActorLogging}
 import org.joda.time.DateTime
 
 /**
@@ -8,19 +8,17 @@ import org.joda.time.DateTime
   */
 object PlayRoom {
 
-  case class ClientEvent(clientId: Long, data: ByteString)
+  case class ClientDisconnected(clientId: Int)
 
-  case class ClientDisconnected(clientId: Long)
+  case object GetCurrentState
 
-  case class GetCurrentState(clientId: Long, cleintTime: DateTime)
-
-  case class GetEventsFromTime(clientId: Long, fromTime: DateTime, clientTime: DateTime)
+  case class GetEventsFromTime(fromTime: Long)
 }
 
 /**
   * Пока у нас нет отдельного актора под игровую комнату.
   * Функции комнаты тащит сервер, т.о. один сервер --> одна комната
   */
-class PlayRoom {
-
+class PlayRoom(id: Int) extends Actor with ActorLogging {
+  override def receive: Receive = ???
 }

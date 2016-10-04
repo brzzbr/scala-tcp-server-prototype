@@ -5,10 +5,9 @@ import java.net.InetSocketAddress
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
-import org.joda.time.DateTime
-import org.laborunion.project.hollyshit.clientmsgs.MessageWrapper.Msg
-import org.laborunion.project.hollyshit.clientmsgs.{EventMsg, GetEventsMsg, GetStateMsg, MessageWrapper}
-import org.laborunion.project.hollyshit.server.PlayRoom.{ClientDisconnected, GetCurrentState, GetEventsFromTime}
+import org.laborunion.project.hollyshit.msgs.MessageWrapper.Msg
+import org.laborunion.project.hollyshit.msgs._
+import org.laborunion.project.hollyshit.server.PlayRoom._
 
 import scala.concurrent.duration._
 
@@ -17,23 +16,20 @@ import scala.concurrent.duration._
   */
 object ClientHandler {
 
-  case class Send(data: ByteString)
-
-
-  def props(id: Long, remote: InetSocketAddress, connection: ActorRef, playroom: ActorRef): Props =
+  def props(id: Int, remote: InetSocketAddress, connection: ActorRef, playroom: ActorRef): Props =
     Props(new CleintHandler(id, remote, connection, playroom))
 }
 
 class CleintHandler(
-    id: Long,
+    id: Int,
     remote: InetSocketAddress,
     connection: ActorRef,
     playroom: ActorRef) extends Actor with ActorLogging {
 
-  import ClientHandler._
   import akka.io.Tcp._
 
-  implicit val timeout = Timeout(100 milliseconds)
+  implicit val ec = context.dispatcher
+  implicit val timeout = Timeout(50 milliseconds)
 
   // контекст этого актора наблюдает за актором соединения
   // когда актор соединения отвалится, мы получим об этом сообщение
@@ -57,16 +53,11 @@ class CleintHandler(
         case Msg.GetEventsMsg(gem) => handleGetEventsMsg(gem)
 
         // событие с клиента
-        case Msg.EventMsg(em) => handleEventMsg(em)
+        case Msg.EventMsg(em) => playroom ! em.copy(playerId = Some(id))
 
         // пришла какая-то бурда
         case Msg.Empty => // игонрируем
       }
-
-    // надо послать сообщение клиенту
-    case Send(data) =>
-      log.info(s"Client $id, send data to $remote")
-      connection ! Write(data)
 
     // соединение было закрыто, можно уведомить игровую комнату
     // и незамедлительно убить актора
@@ -76,23 +67,17 @@ class CleintHandler(
       context stop self
   }
 
-
   def handleGetStateMsg(gsm: GetStateMsg) = {
-    val future = playroom ? GetCurrentState(id, new DateTime(gsm.time))
-//    future.onSuccess { case result: PlayRoomState =>
-//      // TODO: Перегнать PlayRoomState в ByteString (protobuf)
-//      //connection ! Write(result)
-//    }
+    val future = playroom ? GetCurrentState
+    future.onSuccess { case res: PlayRoomState =>
+      connection ! Write(ByteString(res.toByteArray))
+    }
   }
 
   def handleGetEventsMsg(gem: GetEventsMsg) = {
-    val future = playroom ? GetEventsFromTime(id, new DateTime(gem.fromTime), new DateTime(gem.time))
-//    future.onSuccess { case result: Events
-//
-//    }
-  }
-
-  def handleEventMsg(em: EventMsg) = {
-
+    val future = playroom ? GetEventsFromTime(gem.fromTime)
+    future.onSuccess { case res: Events =>
+      connection ! Write(ByteString(res.toByteArray))
+    }
   }
 }
