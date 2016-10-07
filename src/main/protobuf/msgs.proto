@@ -20,7 +20,20 @@ message GetStateMsg {
 }
 
 message PlayRoomState {
-    required int32 playersCount = 1;
+    repeated PlayerStatus players = 1;
+}
+
+message PlayerStatus {
+    required int32 id = 1;
+    required string name = 2;
+    required bool isAlive = 3;
+    required PlayerCoords coords = 4;
+}
+
+message PlayerCoords {
+    required double x = 1;
+    required double y = 2;
+    required double a = 3;
 }
 
 message Events {
@@ -28,26 +41,23 @@ message Events {
 }
 
 message EventMsg {
-    optional int32 playerId = 1;
-    required int64 time = 2;
+    optional int32 objectId = 1;
+    optional int32 objectType = 2;
+    required int64 time = 3;
     oneof event {
-        Respawn respawn = 3;
-        Move move = 4;
-        Die die = 5;
+        Respawn respawn = 4;
+        Move move = 5;
+        Die die = 6;
 
-        Connected connected = 6;
-        Disconnected disconnected = 7;
+        Connected connected = 7;
+        Disconnected disconnected = 8;
     }
 }
 
 message Respawn {
-    required int32 x = 1;
-    required int32 y = 2;
 }
 
 message Move {
-    required int32 dx = 1;
-    required int32 dy = 2;
 }
 
 message Die {

@@ -53,7 +53,7 @@ class ClientHandler(
         case Msg.GetEventsMsg(gem) => handleGetEventsMsg(gem)
 
         // событие с клиента
-        case Msg.EventMsg(em) => playroom ! em.copy(playerId = Some(id))
+        case Msg.EventMsg(em) => playroom ! em.copy(objectId = Some(id))
 
         // пришла какая-то бурда
         case Msg.Empty => // игонрируем
@@ -63,7 +63,6 @@ class ClientHandler(
     // и незамедлительно убить актора
     case PeerClosed =>
       log.info(s"Client id: $id, peer: $remote closed")
-      playroom ! ClientDisconnected(id)
       context stop self
   }
 
