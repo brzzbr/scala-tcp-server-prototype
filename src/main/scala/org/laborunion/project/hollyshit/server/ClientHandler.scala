@@ -5,9 +5,10 @@ import java.net.InetSocketAddress
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
-import org.laborunion.project.hollyshit.msgs.MessageWrapper.Msg
-import org.laborunion.project.hollyshit.msgs._
+import org.laborunion.project.hollyshit.clientmsgs.{GetEventsMsg, GetStateMsg, MessageWrapper}
+import org.laborunion.project.hollyshit.clientmsgs.MessageWrapper.Msg
 import org.laborunion.project.hollyshit.server.PlayRoom._
+import org.laborunion.project.hollyshit.servermsgs.{PlayRoomState, ServerEvents}
 
 import scala.concurrent.duration._
 
@@ -53,7 +54,7 @@ class ClientHandler(
         case Msg.GetEventsMsg(gem) => handleGetEventsMsg(gem)
 
         // событие с клиента
-        case Msg.EventMsg(em) => playroom ! em.copy(objectId = Some(id))
+        case Msg.EventMsg(em) => playroom ! (id, em)
 
         // пришла какая-то бурда
         case Msg.Empty => // игонрируем
@@ -75,7 +76,7 @@ class ClientHandler(
 
   def handleGetEventsMsg(gem: GetEventsMsg) = {
     val future = playroom ? GetEventsFromTime(gem.fromTime)
-    future.onSuccess { case res: Events =>
+    future.onSuccess { case res: ServerEvents =>
       connection ! Write(ByteString(res.toByteArray))
     }
   }

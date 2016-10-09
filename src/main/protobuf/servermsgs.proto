@@ -1,0 +1,32 @@
+syntax = "proto2";
+
+package org.laborunion.project.hollyshit;
+import "events.proto";
+
+message PlayRoomState {
+    repeated PlayerStatus players = 1;
+}
+
+message PlayerStatus {
+    required int32 id = 1;
+    required string name = 2;
+    required bool isAlive = 3;
+    required PlayerCoords coords = 4;
+}
+
+message PlayerCoords {
+    required double x = 1;
+    required double y = 2;
+    required double a = 3;
+}
+
+message ServerEvents {
+    repeated ServerEventMsg events = 1;
+}
+
+message ServerEventMsg {
+    required int32 objectId = 1;
+    //optional int32 objectType = 2;
+    required int64 time = 3;
+    required Event event = 4;
+}

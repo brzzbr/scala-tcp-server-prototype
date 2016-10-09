@@ -3,7 +3,8 @@ package org.laborunion.project.hollyshit.server
 import java.net.InetSocketAddress
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.laborunion.project.hollyshit.msgs.{EventMsg, Events, PlayRoomState}
+import org.laborunion.project.hollyshit.clientmsgs.ClientEventMsg
+import org.laborunion.project.hollyshit.servermsgs.{PlayRoomState, ServerEventMsg, ServerEvents}
 
 import scala.concurrent.duration._
 
@@ -31,7 +32,7 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
   val n = w div 4
   val g = 10 milliseconds
 
-  var eventBuffer: Vector[EventMsg] = Vector.empty[EventMsg]
+  var eventBuffer: Vector[ServerEventMsg] = Vector.empty[ServerEventMsg]
   var currentState: PlayRoomState = _ //PlayRoomState(0)
 
   // TODO: раз в N секунд собирать новый state комнаты и посылать сообщение с ним N = W / 4
@@ -48,7 +49,7 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
   }
 
   override def postStop(): Unit = {
-    stateSnapshotJob.cancel()
+    //stateSnapshotJob.cancel()
     gameCycleJob.cancel()
     super.postStop()
   }
@@ -56,8 +57,12 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
   override def receive: Receive = {
     // Пришло событие от клиента --> записали в коллекцию событий,
     // выкинули устаревшие, отсортировали по времени, сохранили.
-    case event: EventMsg =>
+    case (id: Int, clientEvent: ClientEventMsg) =>
       val threshold = System.currentTimeMillis - w.toMillis
+      val event = new ServerEventMsg(
+        objectId = id,
+        time = clientEvent.time,
+        event = clientEvent.event)
       eventBuffer = (eventBuffer :+ event)
         .filter(_.time > threshold)
         .sortBy(_.time)
@@ -66,7 +71,7 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
 
     case GetEventsFromTime(time) =>
       val events = eventBuffer.dropWhile(_.time < time)
-      sender ! Events(events)
+      sender ! ServerEvents(events)
 
     case ClientConnected(remote, connection) =>
       val id = generateClientId()

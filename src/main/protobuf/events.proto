@@ -1,0 +1,29 @@
+syntax = "proto2";
+
+package org.laborunion.project.hollyshit;
+
+message Event {
+    oneof event {
+        Respawn respawn = 1;
+        Move move = 2;
+        Die die = 3;
+
+        Connected connected = 4;
+        Disconnected disconnected = 5;
+    }
+}
+
+message Respawn {
+}
+
+message Move {
+}
+
+message Die {
+}
+
+message Connected {
+}
+
+message Disconnected {
+}

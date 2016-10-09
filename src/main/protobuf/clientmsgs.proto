@@ -1,0 +1,26 @@
+syntax = "proto2";
+
+package org.laborunion.project.hollyshit;
+import "events.proto";
+
+message MessageWrapper {
+    oneof msg {
+        GetEventsMsg getEventsMsg = 1;
+        GetStateMsg getStateMsg = 2;
+        ClientEventMsg eventMsg = 3;
+    }
+}
+
+message GetEventsMsg {
+    required int64 time = 1;
+    required int64 fromTime = 2;
+}
+
+message GetStateMsg {
+    required int64 time = 1;
+}
+
+message ClientEventMsg {
+    required int64 time = 1;
+    required Event event = 2;
+}
