@@ -3,8 +3,9 @@ package org.laborunion.project.hollyshit.server
 import java.net.InetSocketAddress
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.laborunion.project.hollyshit.clientmsgs.ClientEventMsg
-import org.laborunion.project.hollyshit.servermsgs.{PlayRoomState, ServerEventMsg, ServerEvents}
+import org.laborunion.project.hollyshit.events.{PlayerCoords, Respawn}
+import org.laborunion.project.hollyshit.servermsgs.ServerEventMsg.Event
+import org.laborunion.project.hollyshit.servermsgs._
 
 import scala.concurrent.duration._
 
@@ -29,54 +30,79 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
 
   var idGenerator: Int = 0
   val w = 10 seconds
-  val n = w div 4
+  val n = w div 10
   val g = 10 milliseconds
 
-  var eventBuffer: Vector[ServerEventMsg] = Vector.empty[ServerEventMsg]
-  var currentState: PlayRoomState = _ //PlayRoomState(0)
+  val defaultCoords = PlayerCoords(0, 0, 0)
 
-  // TODO: раз в N секунд собирать новый state комнаты и посылать сообщение с ним N = W / 4
+  var eventBuffer: Vector[ServerEventMsg] = Vector.empty[ServerEventMsg]
+  var currentState: PlayRoomState = PlayRoomState(System.currentTimeMillis, Seq.empty[PlayerStatus])
+
+  // TODO: надо вынести в отдельный класс с различной логикой мерджа событий в зависимости от типа объекта
   val stateSnapshotJob = context.system.scheduler.schedule(n, w) {
     val mapOfEvents = eventBuffer.groupBy(_.objectId)
-    mapOfEvents.map { case(k, v) =>
-      //v.sortBy(_.time).foldLeft()
-    }
-  }
+    val playersStatus = currentState.players.map(x => x.id -> x).toMap
+    val pStatuses = mapOfEvents.map { case(k, v) =>
+      // если игрока не было, а события по нему есть, надо его создать
+      val curState = playersStatus.getOrElse(k,
+        PlayerStatus(
+          id = k,
+          isAlive = false,
+          coords = defaultCoords))
 
-  // TODO: игровой server-side цикл
-  val gameCycleJob = context.system.scheduler.schedule(g, g) {
+      v.sortBy(_.time).foldLeft(curState) { (s, e) =>
+        e.event match {
 
+          case Event.Respawn(r) => s.withCoords(r.coords).withIsAlive(true)
+
+          case Event.Move(m) => s.withCoords {
+            val x = s.coords.x + m.dx
+            val y = s.coords.x + m.dy
+            val a = s.coords.x + m.da
+            PlayerCoords(x, y, a)
+          }
+
+          case _ => s
+        }
+      }
+    }.toSeq
+
+    // посылаем самому себе новое состояние сцены
+    self ! PlayRoomState(System.currentTimeMillis, pStatuses)
   }
 
   override def postStop(): Unit = {
-    //stateSnapshotJob.cancel()
-    gameCycleJob.cancel()
+    stateSnapshotJob.cancel()
     super.postStop()
   }
 
   override def receive: Receive = {
-    // Пришло событие от клиента --> записали в коллекцию событий,
+    // Пришло новое состояние сцены -- надо обновить
+    case state: PlayRoomState => currentState = state
+
+    // Пришло событие --> записали в коллекцию событий,
     // выкинули устаревшие, отсортировали по времени, сохранили.
-    case (id: Int, clientEvent: ClientEventMsg) =>
+    case event: ServerEventMsg =>
       val threshold = System.currentTimeMillis - w.toMillis
-      val event = new ServerEventMsg(
-        objectId = id,
-        time = clientEvent.time,
-        event = clientEvent.event)
       eventBuffer = (eventBuffer :+ event)
         .filter(_.time > threshold)
         .sortBy(_.time)
 
+    // запрос состояния сцены
     case GetCurrentState => sender ! currentState
 
+    // запрос событи с некоторого времени
     case GetEventsFromTime(time) =>
       val events = eventBuffer.dropWhile(_.time < time)
       sender ! ServerEvents(events)
 
+    // прицепился новый клиент
     case ClientConnected(remote, connection) =>
       val id = generateClientId()
       val handler = context.actorOf(ClientHandler.props(id, remote, connection, self))
       sender ! handler
+      self ! ServerEventMsg(id, System.currentTimeMillis, Event.Respawn(
+        Respawn(defaultCoords)))
   }
 
   def generateClientId(): Int = {

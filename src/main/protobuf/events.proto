@@ -2,21 +2,14 @@ syntax = "proto2";
 
 package org.laborunion.project.hollyshit;
 
-message Event {
-    oneof event {
-        Respawn respawn = 1;
-        Move move = 2;
-        Die die = 3;
-
-        Connected connected = 4;
-        Disconnected disconnected = 5;
-    }
-}
-
 message Respawn {
+    required PlayerCoords coords = 1;
 }
 
 message Move {
+    required double dx = 1;
+    required double dy = 2;
+    required double da = 3;
 }
 
 message Die {
@@ -26,4 +19,10 @@ message Connected {
 }
 
 message Disconnected {
+}
+
+message PlayerCoords {
+    required double x = 1;
+    required double y = 2;
+    required double a = 3;
 }

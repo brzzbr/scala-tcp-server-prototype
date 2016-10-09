@@ -4,20 +4,14 @@ package org.laborunion.project.hollyshit;
 import "events.proto";
 
 message PlayRoomState {
-    repeated PlayerStatus players = 1;
+    required int64 time = 1;
+    repeated PlayerStatus players = 2;
 }
 
 message PlayerStatus {
     required int32 id = 1;
-    required string name = 2;
     required bool isAlive = 3;
     required PlayerCoords coords = 4;
-}
-
-message PlayerCoords {
-    required double x = 1;
-    required double y = 2;
-    required double a = 3;
 }
 
 message ServerEvents {
@@ -28,5 +22,8 @@ message ServerEventMsg {
     required int32 objectId = 1;
     //optional int32 objectType = 2;
     required int64 time = 3;
-    required Event event = 4;
+    oneof event {
+        Respawn respawn = 4;
+        Move move = 5;
+    }
 }

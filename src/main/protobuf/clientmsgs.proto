@@ -22,5 +22,7 @@ message GetStateMsg {
 
 message ClientEventMsg {
     required int64 time = 1;
-    required Event event = 2;
+    oneof event {
+        Move move = 2;
+    }
 }

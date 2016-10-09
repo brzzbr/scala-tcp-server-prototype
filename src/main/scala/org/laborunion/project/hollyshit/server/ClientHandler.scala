@@ -5,10 +5,10 @@ import java.net.InetSocketAddress
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
-import org.laborunion.project.hollyshit.clientmsgs.{GetEventsMsg, GetStateMsg, MessageWrapper}
 import org.laborunion.project.hollyshit.clientmsgs.MessageWrapper.Msg
+import org.laborunion.project.hollyshit.clientmsgs.{GetEventsMsg, GetStateMsg, MessageWrapper}
 import org.laborunion.project.hollyshit.server.PlayRoom._
-import org.laborunion.project.hollyshit.servermsgs.{PlayRoomState, ServerEvents}
+import org.laborunion.project.hollyshit.servermsgs.{PlayRoomState, ServerEventMsg, ServerEvents}
 
 import scala.concurrent.duration._
 
@@ -27,6 +27,7 @@ class ClientHandler(
     connection: ActorRef,
     playroom: ActorRef) extends Actor with ActorLogging {
 
+  import ImplicitEventsConverter._
   import akka.io.Tcp._
   import context.dispatcher
 
@@ -38,13 +39,12 @@ class ClientHandler(
 
   override def receive: Receive = {
 
-    // получили сообщение от клиента -- оповестим супервайзера (сервер)
+    // получили сообщение от клиента -- оповестим супервайзера (комнату)
     case Received(data) =>
       log.info(s"Client id: $id, received message from: $remote")
       // парсим сообщение, если не можем распарсить -- валится exception
       // который надо игнорировать, для этого надо корректно настроить
       // супервайзера...
-      // TODO: Error kernel pattern по ошибкам парсинга
       val msgWrapper = MessageWrapper.parseFrom(data.toArray)
       msgWrapper.msg match {
         // запрос текущего состояния
@@ -54,7 +54,12 @@ class ClientHandler(
         case Msg.GetEventsMsg(gem) => handleGetEventsMsg(gem)
 
         // событие с клиента
-        case Msg.EventMsg(em) => playroom ! (id, em)
+        case Msg.EventMsg(em) =>
+          val event = new ServerEventMsg(
+            objectId = id,
+            time = em.time,
+            event = em.event)
+          playroom ! (id, em)
 
         // пришла какая-то бурда
         case Msg.Empty => // игонрируем
