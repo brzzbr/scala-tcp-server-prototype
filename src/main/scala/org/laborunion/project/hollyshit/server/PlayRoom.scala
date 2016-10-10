@@ -28,47 +28,17 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
   import PlayRoom._
   import context.dispatcher
 
-  var idGenerator: Int = 0
   val w = 10 seconds
   val n = w div 10
-  val g = 10 milliseconds
 
-  val defaultCoords = PlayerCoords(0, 0, 0)
-
+  var idGenerator: Int = 0
   var eventBuffer: Vector[ServerEventMsg] = Vector.empty[ServerEventMsg]
   var currentState: PlayRoomState = PlayRoomState(System.currentTimeMillis, Seq.empty[PlayerStatus])
 
   // TODO: надо вынести в отдельный класс с различной логикой мерджа событий в зависимости от типа объекта
-  val stateSnapshotJob = context.system.scheduler.schedule(n, w) {
-    val mapOfEvents = eventBuffer.groupBy(_.objectId)
-    val playersStatus = currentState.players.map(x => x.id -> x).toMap
-    val pStatuses = mapOfEvents.map { case(k, v) =>
-      // если игрока не было, а события по нему есть, надо его создать
-      val curState = playersStatus.getOrElse(k,
-        PlayerStatus(
-          id = k,
-          isAlive = false,
-          coords = defaultCoords))
-
-      v.sortBy(_.time).foldLeft(curState) { (s, e) =>
-        e.event match {
-
-          case Event.Respawn(r) => s.withCoords(r.coords).withIsAlive(true)
-
-          case Event.Move(m) => s.withCoords {
-            val x = s.coords.x + m.dx
-            val y = s.coords.x + m.dy
-            val a = s.coords.x + m.da
-            PlayerCoords(x, y, a)
-          }
-
-          case _ => s
-        }
-      }
-    }.toSeq
-
+  val stateSnapshotJob = context.system.scheduler.schedule(w, n) {
     // посылаем самому себе новое состояние сцены
-    self ! PlayRoomState(System.currentTimeMillis, pStatuses)
+    self ! StateSnapshooter.getCurrentState(currentState, eventBuffer)
   }
 
   override def postStop(): Unit = {
@@ -78,7 +48,8 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     // Пришло новое состояние сцены -- надо обновить
-    case state: PlayRoomState => currentState = state
+    case state: PlayRoomState =>
+      currentState = state
 
     // Пришло событие --> записали в коллекцию событий,
     // выкинули устаревшие, отсортировали по времени, сохранили.
@@ -102,7 +73,7 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
       val handler = context.actorOf(ClientHandler.props(id, remote, connection, self))
       sender ! handler
       self ! ServerEventMsg(id, System.currentTimeMillis, Event.Respawn(
-        Respawn(defaultCoords)))
+        Respawn(Consts.defaultCoords)))
   }
 
   def generateClientId(): Int = {

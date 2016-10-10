@@ -15,7 +15,7 @@ object Runner extends App {
   val log = system.log
 
   val server = system.actorOf(Server.props(3159), "test-server")
-//  val clientA = system.actorOf(Client.props("localhost", 3159), "a-client")
+  val clientA = system.actorOf(Client.props("localhost", 3159), "a-client")
 //  val clientB = system.actorOf(Client.props("localhost", 3159), "b-client")
 //  val clientC = system.actorOf(Client.props("localhost", 3159), "c-client")
   log.info(s"PRESS ENTER TO STOP...")
