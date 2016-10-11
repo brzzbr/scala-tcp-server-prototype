@@ -3,7 +3,7 @@ package org.laborunion.project.hollyshit.server
 import java.net.InetSocketAddress
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.laborunion.project.hollyshit.events.{PlayerCoords, Respawn}
+import org.laborunion.project.hollyshit.events.Respawn
 import org.laborunion.project.hollyshit.servermsgs.ServerEventMsg.Event
 import org.laborunion.project.hollyshit.servermsgs._
 
@@ -25,6 +25,7 @@ object PlayRoom {
 
 class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
 
+  import StateSnapshoter._
   import PlayRoom._
   import context.dispatcher
 
@@ -38,7 +39,7 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
   // TODO: надо вынести в отдельный класс с различной логикой мерджа событий в зависимости от типа объекта
   val stateSnapshotJob = context.system.scheduler.schedule(w, n) {
     // посылаем самому себе новое состояние сцены
-    self ! StateSnapshooter.getCurrentState(currentState, eventBuffer)
+    self ! getCurrentState(currentState, eventBuffer)
   }
 
   override def postStop(): Unit = {
