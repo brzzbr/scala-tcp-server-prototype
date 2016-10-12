@@ -1,8 +1,8 @@
 package org.laborunion.project.hollyshit.server
 
-import org.laborunion.project.hollyshit.events.PlayerCoords
-import org.laborunion.project.hollyshit.servermsgs.ServerEventMsg.Event
-import org.laborunion.project.hollyshit.servermsgs.{PlayRoomState, PlayerStatus, ServerEventMsg}
+import org.laborunion.project.hollyshit.servermsgs.EventMsg.Event
+import org.laborunion.project.hollyshit.servermsgs.EventMsg.Event._
+import org.laborunion.project.hollyshit.servermsgs.{EventMsg, PlayRoomState, PlayerCoords, PlayerStatus}
 
 /**
   * Created by bbondarenko on 10/10/16.
@@ -17,7 +17,7 @@ object StateSnapshoter {
   // а в методах типа getPlayersState где идет fold по конкретному объекту, можно зафигачить
   // map --> parallel map и херачить еще быстрее... потом можно подумать над отдельным
   // ForkJoinPool под это дело!
-  def getCurrentState(prevState: PlayRoomState, events: Vector[ServerEventMsg]): PlayRoomState = {
+  def getCurrentState(prevState: PlayRoomState, events: Vector[EventMsg]): PlayRoomState = {
 
     val pEvents = events
       .filter(_.time > prevState.time)
@@ -33,7 +33,7 @@ object StateSnapshoter {
 
   // TODO: вычисление текущих статусов объектов можно запилить через type-class'ы
   // обрати внимание -- этот метод можно обобщить по типу (PlayerStatus)... ну и default
-  def getPlayersState(p: Map[Int, PlayerStatus], e: Map[Int, Vector[ServerEventMsg]]): Seq[PlayerStatus] = {
+  def getPlayersState(p: Map[Int, PlayerStatus], e: Map[Int, Vector[EventMsg]]): Seq[PlayerStatus] = {
     val pd = p.withDefault(defaultPlayer)
     (p.keySet ++ e.keySet).map { k =>
       val es = e.getOrElse(k, Vector.empty).sortBy(_.time).map(_.event)
@@ -42,8 +42,8 @@ object StateSnapshoter {
   }
 
   def updatePlayerStatus(s: PlayerStatus, e: Event): PlayerStatus = e match {
-    case Event.Respawn(r) => s.withCoords(r.coords).withIsAlive(true)
-    case Event.Move(m) => s.withCoords {
+    case Respawn(r) => s.withCoords(r.coords).withIsAlive(true)
+    case Move(m) => s.withCoords {
       val x = s.coords.x + m.dx
       val y = s.coords.x + m.dy
       val a = s.coords.x + m.da

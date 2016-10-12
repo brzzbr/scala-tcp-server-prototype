@@ -3,8 +3,7 @@ package org.laborunion.project.hollyshit.server
 import java.net.InetSocketAddress
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.laborunion.project.hollyshit.events.Respawn
-import org.laborunion.project.hollyshit.servermsgs.ServerEventMsg.Event
+import org.laborunion.project.hollyshit.servermsgs.EventMsg.Event.Respawn
 import org.laborunion.project.hollyshit.servermsgs._
 
 import scala.concurrent.duration._
@@ -25,15 +24,15 @@ object PlayRoom {
 
 class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
 
-  import StateSnapshoter._
   import PlayRoom._
+  import StateSnapshoter._
   import context.dispatcher
 
   val w = 10 seconds
   val n = w div 10
 
   var idGenerator: Int = 0
-  var eventBuffer: Vector[ServerEventMsg] = Vector.empty[ServerEventMsg]
+  var eventBuffer: Vector[EventMsg] = Vector.empty[EventMsg]
   var currentState: PlayRoomState = PlayRoomState(System.currentTimeMillis, Seq.empty[PlayerStatus])
 
   // TODO: надо вынести в отдельный класс с различной логикой мерджа событий в зависимости от типа объекта
@@ -54,7 +53,7 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
 
     // Пришло событие --> записали в коллекцию событий,
     // выкинули устаревшие, отсортировали по времени, сохранили.
-    case event: ServerEventMsg =>
+    case event: EventMsg =>
       val threshold = System.currentTimeMillis - w.toMillis
       eventBuffer = (eventBuffer :+ event)
         .filter(_.time > threshold)
@@ -66,15 +65,14 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
     // запрос событи с некоторого времени
     case GetEventsFromTime(time) =>
       val events = eventBuffer.dropWhile(_.time < time)
-      sender ! ServerEvents(events)
+      sender ! Events(events)
 
     // прицепился новый клиент
     case ClientConnected(remote, connection) =>
       val id = generateClientId()
       val handler = context.actorOf(ClientHandler.props(id, remote, connection, self))
       sender ! handler
-      self ! ServerEventMsg(id, System.currentTimeMillis, Event.Respawn(
-        Respawn(Consts.defaultCoords)))
+      self ! EventMsg(id, System.currentTimeMillis, Respawn(Consts.defaultCoords))
   }
 
   def generateClientId(): Int = {

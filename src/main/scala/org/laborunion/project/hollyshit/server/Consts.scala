@@ -1,7 +1,6 @@
 package org.laborunion.project.hollyshit.server
 
-import org.laborunion.project.hollyshit.events.PlayerCoords
-import org.laborunion.project.hollyshit.servermsgs.PlayerStatus
+import org.laborunion.project.hollyshit.servermsgs.{PlayerCoords, PlayerStatus}
 
 /**
   * Created by bbondarenko on 10/10/16.

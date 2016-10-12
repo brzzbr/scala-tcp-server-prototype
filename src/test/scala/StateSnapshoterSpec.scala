@@ -1,4 +1,4 @@
-import org.laborunion.project.hollyshit.events.Respawn
+import org.laborunion.project.hollyshit.events.{Move, PlayerCoords, Respawn}
 import org.scalatest.{FlatSpec, Matchers}
 import org.laborunion.project.hollyshit.server.StateSnapshoter._
 import org.laborunion.project.hollyshit.server.Consts._
@@ -30,7 +30,8 @@ class StateSnapshoterSpec
   }
 
   it should "move player with delta coords on Move event" in {
-    fail
+    val res = updatePlayerStatus(defaultPlayer(0), Event.Move(Move(1, 2, 0.3)))
+    res.coords shouldBe PlayerCoords(1, 2, 0.3)
   }
 
   it should "ignore events other then Respawn and Move" in {

@@ -1,7 +1,6 @@
 syntax = "proto2";
 
 package org.laborunion.project.hollyshit;
-import "events.proto";
 
 message PlayRoomState {
     required int64 time = 1;
@@ -14,11 +13,11 @@ message PlayerStatus {
     required PlayerCoords coords = 4;
 }
 
-message ServerEvents {
-    repeated ServerEventMsg events = 1;
+message Events {
+    repeated EventMsg events = 1;
 }
 
-message ServerEventMsg {
+message EventMsg {
     required int32 objectId = 1;
     //optional int32 objectType = 2;
     required int64 time = 3;
@@ -27,3 +26,30 @@ message ServerEventMsg {
         Move move = 5;
     }
 }
+
+// EVENTS --------------------------------------------
+message Respawn {
+    required PlayerCoords coords = 1;
+}
+
+message Move {
+    required double dx = 1;
+    required double dy = 2;
+    required double da = 3;
+}
+
+message Die {
+}
+
+message Connected {
+}
+
+message Disconnected {
+}
+
+message PlayerCoords {
+    required double x = 1;
+    required double y = 2;
+    required double a = 3;
+}
+// ---------------------------------------------------

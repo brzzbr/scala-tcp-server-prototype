@@ -1,13 +1,12 @@
 syntax = "proto2";
 
 package org.laborunion.project.hollyshit;
-import "events.proto";
 
 message MessageWrapper {
     oneof msg {
         GetEventsMsg getEventsMsg = 1;
         GetStateMsg getStateMsg = 2;
-        ClientEventMsg eventMsg = 3;
+        CommandMsg eventMsg = 3;
     }
 }
 
@@ -20,9 +19,15 @@ message GetStateMsg {
     required int64 time = 1;
 }
 
-message ClientEventMsg {
+message CommandMsg {
     required int64 time = 1;
-    oneof event {
-        Move move = 2;
+    oneof cmd {
+        MoveCmd move = 2;
     }
+}
+
+message MoveCmd {
+    required double dx = 1;
+    required double dy = 2;
+    required double da = 3;
 }

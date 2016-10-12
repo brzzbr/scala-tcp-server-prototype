@@ -8,7 +8,7 @@ import akka.util.{ByteString, Timeout}
 import org.laborunion.project.hollyshit.clientmsgs.MessageWrapper.Msg
 import org.laborunion.project.hollyshit.clientmsgs.{GetEventsMsg, GetStateMsg, MessageWrapper}
 import org.laborunion.project.hollyshit.server.PlayRoom._
-import org.laborunion.project.hollyshit.servermsgs.{PlayRoomState, ServerEventMsg, ServerEvents}
+import org.laborunion.project.hollyshit.servermsgs.{EventMsg, Events, PlayRoomState}
 
 import scala.concurrent.duration._
 
@@ -55,10 +55,10 @@ class ClientHandler(
 
         // событие с клиента
         case Msg.EventMsg(em) =>
-          val event = new ServerEventMsg(
+          val event = new EventMsg(
             objectId = id,
             time = em.time,
-            event = em.event)
+            event = em.cmd)
           playroom ! (id, em)
 
         // пришла какая-то бурда
@@ -81,7 +81,7 @@ class ClientHandler(
 
   def handleGetEventsMsg(gem: GetEventsMsg) = {
     val future = playroom ? GetEventsFromTime(gem.fromTime)
-    future.onSuccess { case res: ServerEvents =>
+    future.onSuccess { case res: Events =>
       connection ! Write(ByteString(res.toByteArray))
     }
   }
