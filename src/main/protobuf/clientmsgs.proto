@@ -6,7 +6,7 @@ message MessageWrapper {
     oneof msg {
         GetEventsMsg getEventsMsg = 1;
         GetStateMsg getStateMsg = 2;
-        CommandMsg eventMsg = 3;
+        CommandMsg cmdMsg = 3;
     }
 }
 

@@ -2,6 +2,22 @@ syntax = "proto2";
 
 package org.laborunion.project.hollyshit;
 
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+  // All classes that extend a sealed trait need to be in the same Scala
+  // file, so we set single_file to true.
+//  single_file: true
+
+  // Generate the base trait.
+//  preamble: [
+//    "sealed trait MyBaseTrait {",
+//    "  def getFoo: Int",
+//    "  def getBar: String",
+//    "}"
+//  ];
+};
+
 message PlayRoomState {
     required int64 time = 1;
     repeated PlayerStatus players = 2;

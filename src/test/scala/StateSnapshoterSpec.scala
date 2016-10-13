@@ -1,8 +1,8 @@
-import org.laborunion.project.hollyshit.events.{Move, PlayerCoords, Respawn}
-import org.scalatest.{FlatSpec, Matchers}
-import org.laborunion.project.hollyshit.server.StateSnapshoter._
 import org.laborunion.project.hollyshit.server.Consts._
-import org.laborunion.project.hollyshit.servermsgs.ServerEventMsg.Event
+import org.laborunion.project.hollyshit.server.StateSnapshoter._
+import org.laborunion.project.hollyshit.servermsgs.EventMsg.Event
+import org.laborunion.project.hollyshit.servermsgs.{Move, PlayerCoords, PlayerStatus, Respawn}
+import org.scalatest.{FlatSpec, Matchers}
 
 /**
   * Created by borisbondarenko on 10.10.16.
@@ -34,16 +34,17 @@ class StateSnapshoterSpec
     res.coords shouldBe PlayerCoords(1, 2, 0.3)
   }
 
-  it should "ignore events other then Respawn and Move" in {
-    fail
-  }
-
   "getPlayersState" should "produce empty seq on empty events and players statuses" in {
-    fail
+    getPlayersState(Map.empty, Map.empty) shouldBe Seq.empty
   }
 
   it should "pass the same statuses in case of empty events" in {
-    fail
+    val ps = Seq(
+      PlayerStatus(1, isAlive = true, PlayerCoords(1, 2, 0.3)),
+      PlayerStatus(2, isAlive = false, PlayerCoords(2.2, 2.2, -0.1)),
+      PlayerStatus(3, isAlive = true, PlayerCoords(1.9, 2.1, 0.5))
+    )
+    getPlayersState(ps.map(p => p.id -> p).toMap, Map.empty) shouldBe ps
   }
 
   it should "get updatet statuses on empty players statuses" in {

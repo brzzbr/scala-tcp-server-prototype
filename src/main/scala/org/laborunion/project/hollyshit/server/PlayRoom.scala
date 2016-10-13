@@ -3,7 +3,6 @@ package org.laborunion.project.hollyshit.server
 import java.net.InetSocketAddress
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.laborunion.project.hollyshit.servermsgs.EventMsg.Event.Respawn
 import org.laborunion.project.hollyshit.servermsgs._
 
 import scala.concurrent.duration._
@@ -72,7 +71,7 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
       val id = generateClientId()
       val handler = context.actorOf(ClientHandler.props(id, remote, connection, self))
       sender ! handler
-      self ! EventMsg(id, System.currentTimeMillis, Respawn(Consts.defaultCoords))
+      self ! EventMsg(id, System.currentTimeMillis).withRespawn(Respawn(Consts.defaultCoords))
   }
 
   def generateClientId(): Int = {

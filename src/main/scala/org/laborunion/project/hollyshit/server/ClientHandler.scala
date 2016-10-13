@@ -54,12 +54,12 @@ class ClientHandler(
         case Msg.GetEventsMsg(gem) => handleGetEventsMsg(gem)
 
         // событие с клиента
-        case Msg.EventMsg(em) =>
+        case Msg.CmdMsg(cm) =>
           val event = new EventMsg(
             objectId = id,
-            time = em.time,
-            event = em.cmd)
-          playroom ! (id, em)
+            time = cm.time,
+            event = cm.cmd)
+          playroom ! (id, event)
 
         // пришла какая-то бурда
         case Msg.Empty => // игонрируем

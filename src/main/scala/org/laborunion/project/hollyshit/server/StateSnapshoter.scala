@@ -42,7 +42,10 @@ object StateSnapshoter {
   }
 
   def updatePlayerStatus(s: PlayerStatus, e: Event): PlayerStatus = e match {
-    case Respawn(r) => s.withCoords(r.coords).withIsAlive(true)
+    case Respawn(r) => s.update(
+      _.coords := r.coords,
+      _.isAlive := true
+    )
     case Move(m) => s.withCoords {
       val x = s.coords.x + m.dx
       val y = s.coords.x + m.dy

@@ -26,10 +26,12 @@ lazy val dependencies: Seq[ModuleID] = {
   Seq(
     // akka
     "com.typesafe.akka" %% "akka-actor" % akkaV,
-    "com.github.dnvriend" %% "akka-persistence-inmemory" % inMemV,
 
     // tests
     "org.scalatest" %% "scalatest" % scalatestV % "it, test",
-    "org.mockito" % "mockito-core" % mockitoV % "it, test"
+    "org.mockito" % "mockito-core" % mockitoV % "it, test",
+
+    // protobuf
+    "com.trueaccord.scalapb" %% "scalapb-runtime" % "0.5.42" % "protobuf"
   )
 }
