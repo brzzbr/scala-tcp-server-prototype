@@ -2,36 +2,38 @@ package org.laborunion.project.hollyshit.server
 
 import java.net.InetSocketAddress
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.pattern.ask
-import akka.util.{ByteString, Timeout}
+import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
+import akka.util.ByteString
+import org.laborunion.project.hollyshit.clientmsgs.MessageWrapper
 import org.laborunion.project.hollyshit.clientmsgs.MessageWrapper.Msg
-import org.laborunion.project.hollyshit.clientmsgs.{GetEventsMsg, GetStateMsg, MessageWrapper}
-import org.laborunion.project.hollyshit.server.PlayRoom._
-import org.laborunion.project.hollyshit.servermsgs.{EventMsg, Events, PlayRoomState}
+import org.laborunion.project.hollyshit.servermsgs.EventMsg
 
 import scala.concurrent.duration._
 
 /**
   * Created by borisbondarenko on 17.09.16.
   */
-object ClientHandler {
-
-  def props(id: Int, remote: InetSocketAddress, connection: ActorRef, playroom: ActorRef): Props =
-    Props(new ClientHandler(id, remote, connection, playroom))
-}
-
 class ClientHandler(
     id: Int,
     remote: InetSocketAddress,
     connection: ActorRef,
     playroom: ActorRef) extends Actor with ActorLogging {
 
-  import ImplicitEventsConverter._
+  import ClientHandler._
   import akka.io.Tcp._
-  import context.dispatcher
 
-  implicit val timeout = Timeout(50 milliseconds)
+  var stateSnapshotJob: Cancellable = _
+
+  override def preStart(): Unit = {
+    super.preStart()
+    stateSnapshotJob =
+      context.system.scheduler.schedule(period, period, self, Heartbeat)
+  }
+
+  override def postStop(): Unit = {
+    stateSnapshotJob.cancel()
+    super.postStop()
+  }
 
   // контекст этого актора наблюдает за актором соединения
   // когда актор соединения отвалится, мы получим об этом сообщение
@@ -39,31 +41,14 @@ class ClientHandler(
 
   override def receive: Receive = {
 
-    // получили сообщение от клиента -- оповестим супервайзера (комнату)
     case Received(data) =>
-      log.info(s"Client id: $id, received message from: $remote")
-      // парсим сообщение, если не можем распарсить -- валится exception
-      // который надо игнорировать, для этого надо корректно настроить
-      // супервайзера...
-      val msgWrapper = MessageWrapper.parseFrom(data.toArray)
-      msgWrapper.msg match {
-        // запрос текущего состояния
-        case Msg.GetStateMsg(gsm) => handleGetStateMsg(gsm)
+      handleClientCommand(data)
 
-        // запрос событий произошедших с некоего времени
-        case Msg.GetEventsMsg(gem) => handleGetEventsMsg(gem)
+    case Heartbeat =>
+      connection ! Write(ByteString.empty)
 
-        // событие с клиента
-        case Msg.CmdMsg(cm) =>
-          val event = new EventMsg(
-            objectId = id,
-            time = cm.time,
-            event = cm.cmd)
-          playroom ! (id, event)
-
-        // пришла какая-то бурда
-        case Msg.Empty => // игонрируем
-      }
+    case e:EventMsg =>
+      connection ! Write(ByteString(e.toByteArray))
 
     // соединение было закрыто, можно уведомить игровую комнату
     // и незамедлительно убить актора
@@ -72,17 +57,29 @@ class ClientHandler(
       context stop self
   }
 
-  def handleGetStateMsg(gsm: GetStateMsg) = {
-    val future = playroom ? GetCurrentState
-    future.onSuccess { case res: PlayRoomState =>
-      connection ! Write(ByteString(res.toByteArray))
-    }
-  }
+  def handleClientCommand(data: ByteString): Unit = {
+    val msgWrapper = MessageWrapper.parseFrom(data.toArray)
+    msgWrapper.msg match {
+      // запрос текущего состояния
+      case Msg.GetStateMsg(gsm) =>
+        connection ! Write(ByteString(currentState.toByteArray))
 
-  def handleGetEventsMsg(gem: GetEventsMsg) = {
-    val future = playroom ? GetEventsFromTime(gem.fromTime)
-    future.onSuccess { case res: Events =>
-      connection ! Write(ByteString(res.toByteArray))
+      // команда с клиента
+      case Msg.CmdMsg(cm) =>
+        playroom ! (id, cm)
+
+      // пришла какая-то бурда
+      case Msg.Empty => // игонрируем
     }
   }
+}
+
+object ClientHandler {
+
+  val period = 10.seconds
+
+  def props(id: Int, remote: InetSocketAddress, connection: ActorRef, playroom: ActorRef): Props =
+    Props(new ClientHandler(id, remote, connection, playroom))
+
+  case object Heartbeat
 }

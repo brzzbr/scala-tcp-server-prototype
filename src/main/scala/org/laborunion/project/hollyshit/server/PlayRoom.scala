@@ -2,46 +2,47 @@ package org.laborunion.project.hollyshit.server
 
 import java.net.InetSocketAddress
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.laborunion.project.hollyshit.servermsgs._
+import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
+import org.laborunion.project.hollyshit.servermsgs.{EventMsg, PlayRoomState, PlayerStatus}
 
 import scala.concurrent.duration._
 
 /**
   * Created by borisbondarenko on 17.09.16.
   */
-object PlayRoom {
-
-  case class ClientConnected(remoted: InetSocketAddress, connection: ActorRef)
-
-  case object GetCurrentState
-
-  case class GetEventsFromTime(fromTime: Long)
-
-  def props(playRoomId: Int): Props = Props(new PlayRoom(playRoomId))
-}
-
 class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
 
   import PlayRoom._
   import StateSnapshoter._
   import context.dispatcher
 
-  val w = 10 seconds
-  val n = w div 10
+  val w = 10.seconds
+  val n = 1.second
+  val c = 10.milliseconds
 
-  var idGenerator: Int = 0
+  var clients: Vector[ActorRef] = Vector.empty[ActorRef]
+
   var eventBuffer: Vector[EventMsg] = Vector.empty[EventMsg]
   var currentState: PlayRoomState = PlayRoomState(System.currentTimeMillis, Seq.empty[PlayerStatus])
+  var stateSnapshotJob: Cancellable = _
+  var sendEventsJob: Cancellable =_
 
   // TODO: надо вынести в отдельный класс с различной логикой мерджа событий в зависимости от типа объекта
-  val stateSnapshotJob = context.system.scheduler.schedule(w, n) {
+  override def preStart(): Unit = {
     // посылаем самому себе новое состояние сцены
-    self ! getCurrentState(currentState, eventBuffer)
+    stateSnapshotJob = context.system.scheduler.schedule(n, n) {
+      self ! getCurrentState(currentState, eventBuffer)
+    }
+
+    // посылаем игрокам пачки собыий
+    sendEventsJob = context.system.scheduler.schedule(n, c) {
+
+    }
   }
 
   override def postStop(): Unit = {
     stateSnapshotJob.cancel()
+    sendEventsJob.cancel()
     super.postStop()
   }
 
@@ -60,22 +61,14 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
 
     // запрос состояния сцены
     case GetCurrentState => sender ! currentState
-
-    // запрос событи с некоторого времени
-    case GetEventsFromTime(time) =>
-      val events = eventBuffer.dropWhile(_.time < time)
-      sender ! Events(events)
-
-    // прицепился новый клиент
-    case ClientConnected(remote, connection) =>
-      val id = generateClientId()
-      val handler = context.actorOf(ClientHandler.props(id, remote, connection, self))
-      sender ! handler
-      self ! EventMsg(id, System.currentTimeMillis).withRespawn(Respawn(Consts.defaultCoords))
   }
+}
 
-  def generateClientId(): Int = {
-    idGenerator += 1
-    idGenerator
-  }
+object PlayRoom {
+
+  def props(playRoomId: Int): Props = Props(new PlayRoom(playRoomId))
+
+  case class ClientConnected(id: Int, connection: ActorRef)
+
+  case object GetCurrentState
 }
