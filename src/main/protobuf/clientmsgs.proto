@@ -2,15 +2,14 @@ syntax = "proto2";
 
 package org.laborunion.project.hollyshit;
 
-message MessageWrapper {
-    oneof msg {
-        GetStateMsg getStateMsg = 2;
-        CommandMsg cmdMsg = 3;
-    }
-}
+import "servermsgs.proto";
 
-message GetStateMsg {
-    required int64 time = 1;
+message MsgToClient {
+    required int64 id = 1;
+    oneof msg {
+        EventMsg event = 2;
+        PlayRoomState state = 3;
+    }
 }
 
 message CommandMsg {

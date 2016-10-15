@@ -32,7 +32,7 @@ class Server(port: Int) extends Actor with ActorLogging {
     case Connected(remote, _) =>
       log.info(s"Client connected: $remote")
       idGenerator += 1
-      val handler = context.actorOf(ClientHandler.props(idGenerator, remote, sender, self))
+      val handler = context.actorOf(ClientHandler.props(idGenerator, sender, self))
       sender ! Register(handler)
   }
 }

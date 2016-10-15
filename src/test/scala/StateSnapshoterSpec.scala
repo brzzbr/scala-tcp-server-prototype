@@ -47,7 +47,7 @@ class StateSnapshoterSpec
     getPlayersState(ps.map(p => p.id -> p).toMap, Map.empty) shouldBe ps
   }
 
-  it should "get updatet statuses on empty players statuses" in {
+  it should "get update statuses on empty players statuses" in {
     fail
   }
 
