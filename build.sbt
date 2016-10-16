@@ -18,7 +18,7 @@ lazy val `tcp-server`: Project = (project in file("."))
 
 lazy val dependencies: Seq[ModuleID] = {
 
-  val akkaV = "2.4.10"
+  val akkaV = "2.4.11"
   val inMemV = "1.3.10"
   val scalatestV = "2.2.6"
   val mockitoV = "1.10.19"
@@ -26,6 +26,7 @@ lazy val dependencies: Seq[ModuleID] = {
   Seq(
     // akka
     "com.typesafe.akka" %% "akka-actor" % akkaV,
+    "com.typesafe.akka" %% "akka-testkit" % akkaV,
 
     // tests
     "org.scalatest" %% "scalatest" % scalatestV % "it, test",

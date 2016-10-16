@@ -14,9 +14,15 @@ class Server(port: Int) extends Actor with ActorLogging {
   import context.system
 
   var idGenerator: Int = 0
-  val playRoom = context.actorOf(PlayRoom.props(100500))
+  val playRoom = getPlayRoom
 
-  IO(Tcp) ! Bind(self, new InetSocketAddress("localhost", port))
+  // overridable for tests
+  lazy val getTcp = IO(Tcp)
+  lazy val getPlayRoom = context.actorOf(PlayRoom.props(100500))
+  def getClientHandler(id: Int) = context.actorOf(ClientHandler.props(id, sender, getPlayRoom))
+  //----------------------
+
+  getTcp ! Bind(self, new InetSocketAddress("localhost", port))
 
   override def receive: Receive = {
     // при успешном биндинге к порту просто логгируем этот факт
@@ -32,8 +38,7 @@ class Server(port: Int) extends Actor with ActorLogging {
     case Connected(remote, _) =>
       log.info(s"Client connected: $remote")
       idGenerator += 1
-      val handler = context.actorOf(ClientHandler.props(idGenerator, sender, self))
-      sender ! Register(handler)
+      sender ! Register(getClientHandler(idGenerator))
   }
 }
 
