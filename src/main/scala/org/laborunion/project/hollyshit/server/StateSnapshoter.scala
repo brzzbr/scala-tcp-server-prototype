@@ -6,6 +6,13 @@ import org.laborunion.project.hollyshit.servermsgs.{EventMsg, PlayRoomState, Pla
 
 /**
   * Created by bbondarenko on 10/10/16.
+  *
+  * Temporary procedural implementation of up PlayRoomState updating.
+  * Should be rewritten as a function of PlayRoomState class.
+  *
+  * Status folding functions could be implemented through type-classes.
+  * Right now there's no necessity due to we have only one obj-type
+  * to fold (PlayerStatus)
   */
 object StateSnapshoter {
 
@@ -19,9 +26,7 @@ object StateSnapshoter {
   // ForkJoinPool под это дело!
   def getCurrentState(prevState: PlayRoomState, events: Vector[EventMsg]): PlayRoomState = {
 
-    val pEvents = events
-      .filter(_.time > prevState.time)
-      .groupBy(_.objectId)
+    val pEvents = filterEvents(events, prevState.time)
 
     val pStatuses = prevState
       .players
@@ -30,6 +35,15 @@ object StateSnapshoter {
 
     PlayRoomState(System.currentTimeMillis, getPlayersState(pStatuses, pEvents))
   }
+
+  /**
+    * Фильтруем устаревшие события
+    * @param e вектор событий
+    * @param t отметка времени предыдуще
+    * @return map объекта к событиям по нему
+    */
+  def filterEvents(e: Vector[EventMsg], t: Long): Map[Int, Vector[EventMsg]] =
+    e.filter(_.time > t).groupBy(_.objectId)
 
   // TODO: вычисление текущих статусов объектов можно запилить через type-class'ы
   // обрати внимание -- этот метод можно обобщить по типу (PlayerStatus)... ну и default
@@ -48,8 +62,8 @@ object StateSnapshoter {
     )
     case Move(m) => s.withCoords {
       val x = s.coords.x + m.dx
-      val y = s.coords.x + m.dy
-      val a = s.coords.x + m.da
+      val y = s.coords.y + m.dy
+      val a = s.coords.a + m.da
       PlayerCoords(x, y, a)
     }
     case _ => s
