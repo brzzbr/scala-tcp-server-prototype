@@ -35,7 +35,7 @@ class ServerSpec
   }
 
   "Server" should "bind to port on start" in new scope {
-    tcpProbe expectMsg Bind(server, new InetSocketAddress("localhost", 1005))
+    tcpProbe expectMsg Bind(server, new InetSocketAddress("localhost", port))
   }
 
   it should "shutdown on unsuccessful binding" in new scope {
@@ -56,6 +56,8 @@ class ServerSpec
   }
 
   it should "increment id on new client connections" in new scope {
+    // Pre-Assert
+    testId shouldBe 0
     // Act
     server ! Connected(null, null)
     server ! Connected(null, null)
