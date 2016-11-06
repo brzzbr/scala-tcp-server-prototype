@@ -14,7 +14,8 @@ import scala.collection._
 class ClientHandler(
     id: Int,
     connection: ActorRef,
-    playroom: ActorRef) extends Actor with ActorLogging {
+    playroom: ActorRef,
+    storageThreshold: Int = ClientHandler.defStorageThreshold) extends Actor with ActorLogging {
 
   import PlayRoom._
   import ClientHandler._
@@ -84,30 +85,32 @@ class ClientHandler(
     case PeerClosed           => isClosing = true
   }
 
-  private def writeToClient(data: ByteString): Unit = {
-    buffer(data)
-    connection ! Write(data, Ack)
-    context.become(initializedBuffered, discardOld = false)
+  def writeToClient(data: ByteString): Unit = {
+    if (buffer(data)) {
+      connection ! Write(data, Ack)
+      context.become(initializedBuffered, discardOld = false)
+    }
+    else context become notInitialized
   }
 
-  private def buffer(data: ByteString): Unit = {
+  def buffer(data: ByteString): Boolean = {
     storage enqueue data
     stored += data.size
     if (stored > storageThreshold) {
       storage.clear()
       stored = 0
-      context become notInitialized
-    }
+      false
+    } else true
   }
 
-  private def acknowledge(): Unit = {
+  def acknowledge(): Unit = {
     require(storage.nonEmpty, "storage was empty")
     val msg = storage.dequeue()
     stored -= msg.size
 
     if (storage.isEmpty) {
       if (isClosing) context stop self
-      else context.unbecome()
+      else context.become(initializedUnbuffered, discardOld = false)
     }
     else connection ! Write(storage.front, Ack)
   }
@@ -115,7 +118,7 @@ class ClientHandler(
 
 object ClientHandler {
 
-  val storageThreshold = 65536
+  val defStorageThreshold = 65536
 
   def props(id: Int, connection: ActorRef, playroom: ActorRef): Props =
     Props(new ClientHandler(id, connection, playroom))

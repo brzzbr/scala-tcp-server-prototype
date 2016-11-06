@@ -16,9 +16,8 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  val w = 10.seconds
-  val n = 1.second
-  val c = 10.milliseconds
+  val delay = 5.seconds
+  val period = 1.second
 
   var players: Map[Int, ActorRef] = Map.empty[Int, ActorRef]
 
@@ -29,26 +28,23 @@ class PlayRoom(playRoomId: Int) extends Actor with ActorLogging {
   // TODO: надо вынести в отдельный класс с различной логикой мерджа событий в зависимости от типа объекта
   override def preStart(): Unit = {
     // посылаем самому себе новое состояние сцены
-    stateSnapshotJob = context.system.scheduler.schedule(n, n) {
+    stateSnapshotJob = context.system.scheduler.schedule(delay, period) {
       self ! getCurrentState(currentState, eventBuffer)
     }
   }
 
-  override def postStop(): Unit = {
-    stateSnapshotJob.cancel()
-    super.postStop()
-  }
+  override def postStop(): Unit = stateSnapshotJob.cancel()
 
   override def receive: Receive = {
     // Пришло новое состояние сцены -- надо обновить
     case state: PlayRoomState =>
       currentState = state
 
-    // Пришло событие --> записали в коллекцию событий,
+    // Пришло событие --> заслали всем клиентам записали в коллекцию событий,
     // выкинули устаревшие, отсортировали по времени, сохранили.
     case event: EventMsg =>
       players.values.foreach(_ ! event)
-      val threshold = System.currentTimeMillis - w.toMillis
+      val threshold = System.currentTimeMillis - delay.toMillis
       eventBuffer = (eventBuffer :+ event)
         .filter(_.time > threshold)
         .sortBy(_.time)
