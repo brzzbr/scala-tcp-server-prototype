@@ -13,7 +13,6 @@ object Dependencies {
     val scalaLoggingVersion = "3.5.0"
     val akkaHttpVersion = "10.1.0"
     val akkaVersion = "2.5.11"
-    val web3jScalaVersion = "0.2.0"
     val akkaHttpCorsVersion = "0.2.2"
     val scalaJavaCompatVersion = "0.8.0"
     val scalaTestVersion = "3.0.4"
