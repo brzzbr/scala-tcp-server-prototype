@@ -5,7 +5,7 @@ lazy val `tcp-server`: Project = (project in file("."))
     organization := "org.laborunion",
     name := "scala-tcp-server-prototype",
     version := "0.1.0-SNAPSHOT",
-    scalaVersion := "2.11.8",
+    scalaVersion := "2.12.4",
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-encoding", "utf8"),
     fork in run := true,
     parallelExecution in IntegrationTest := false,
@@ -18,10 +18,9 @@ lazy val `tcp-server`: Project = (project in file("."))
 
 lazy val dependencies: Seq[ModuleID] = {
 
-  val akkaV = "2.4.11"
-  val inMemV = "1.3.10"
-  val scalatestV = "2.2.6"
-  val mockitoV = "1.10.19"
+  val akkaV = "2.5.11"
+  val scalatestV = "3.0.5"
+  val mockitoV = "2.15.0"
 
   Seq(
     // akka
